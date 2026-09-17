@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  access log / application error log logger 분리 예시.
+  소비 서비스의 src/main/resources/logback-spring.xml 에 참고하여 구성한다.
+  JSON 로그를 사용하는 경우 logstash-logback-encoder 등으로 MDC traceId를 포함시킨다.
+-->
+<configuration>
+
+    <appender name="ACCESS_LOG_APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/access.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/access.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <!-- JsonAccessLogWriter가 이미 JSON 문자열을 만들므로 message만 출력 -->
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="APPLICATION_APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/application.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/application.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%X{traceId}] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- access log 전용 logger -->
+    <logger name="ACCESS_LOG" level="INFO" additivity="false">
+        <appender-ref ref="ACCESS_LOG_APPENDER"/>
+    </logger>
+
+    <!-- application error log 전용 logger -->
+    <logger name="APP_ERROR" level="INFO" additivity="false">
+        <appender-ref ref="APPLICATION_APPENDER"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="APPLICATION_APPENDER"/>
+    </root>
+
+</configuration>

@@ -1,0 +1,61 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'com.example'
+version = '0.1.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+    withSourcesJar()
+    withJavadocJar()
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    springBootVersion = '3.3.4'
+}
+
+dependencies {
+    // Spring Boot dependency management via BOM (no Spring Boot plugin needed for a library)
+    api platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+
+    // AutoConfiguration support
+    api 'org.springframework.boot:spring-boot-autoconfigure'
+
+    // Servlet / Web APIs are provided by the host application
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
+
+    // Jackson for JSON serialization / masking
+    api 'com.fasterxml.jackson.core:jackson-databind'
+
+    // slf4j (provided transitively by spring-boot, kept explicit for clarity)
+    compileOnly 'org.slf4j:slf4j-api'
+
+    // Configuration metadata generation for application.yml auto-completion
+    annotationProcessor platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    annotationProcessor 'org.springframework.boot:spring-boot-autoconfigure-processor'
+
+    // Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
