@@ -28,7 +28,7 @@ Access log는 HTTP transaction(request/response pair)을 기록하고, 예외 �
 
 ```gradle
 dependencies {
-    implementation 'com.example:common-web-logging-starter:0.2.0'
+    implementation 'io.github.ezkiro:common-web-logging-starter:0.2.0'
 }
 ```
 

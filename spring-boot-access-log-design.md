@@ -704,7 +704,7 @@ META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
 파일 내용:
 
 ```text
-com.example.accesslog.AccessLogAutoConfiguration
+io.github.ezkiro.accesslog.AccessLogAutoConfiguration
 ```
 
 ### 14.3 Spring Boot 2 지원이 필요한 경우
@@ -717,7 +717,7 @@ META-INF/spring.factories
 
 ```properties
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.example.accesslog.AccessLogAutoConfiguration
+io.github.ezkiro.accesslog.AccessLogAutoConfiguration
 ```
 
 ---
