@@ -2,11 +2,12 @@ package com.example.accesslog.support;
 
 import com.example.accesslog.AccessLogProperties;
 import com.example.accesslog.mask.BodyMasker;
-import org.springframework.web.util.ContentCachingRequestWrapper;
-import org.springframework.web.util.ContentCachingResponseWrapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 /**
  * request / response body를 안전하게 추출한다.
@@ -27,7 +28,7 @@ public final class BodyExtractor {
     }
 
     public static String extractRequestBody(
-            ContentCachingRequestWrapper request,
+            HttpServletRequest request,
             AccessLogProperties properties,
             BodyMasker masker
     ) {
@@ -36,12 +37,19 @@ public final class BodyExtractor {
             return omittedPlaceholder(contentType);
         }
 
-        byte[] content = request.getContentAsByteArray();
+        if (!(request instanceof BoundedContentCachingRequestWrapper cachedRequest)) {
+            return null;
+        }
+        if (cachedRequest.isOverflowed()) {
+            return overflowPlaceholder(properties);
+        }
+
+        byte[] content = cachedRequest.getContentAsByteArray();
         return toLoggableBody(content, request.getCharacterEncoding(), properties, masker);
     }
 
     public static String extractResponseBody(
-            ContentCachingResponseWrapper response,
+            HttpServletResponse response,
             AccessLogProperties properties,
             BodyMasker masker
     ) {
@@ -50,7 +58,14 @@ public final class BodyExtractor {
             return omittedPlaceholder(contentType);
         }
 
-        byte[] content = response.getContentAsByteArray();
+        if (!(response instanceof BoundedContentCachingResponseWrapper cachedResponse)) {
+            return null;
+        }
+        if (cachedResponse.isOverflowed()) {
+            return overflowPlaceholder(properties);
+        }
+
+        byte[] content = cachedResponse.getContentAsByteArray();
         return toLoggableBody(content, response.getCharacterEncoding(), properties, masker);
     }
 
@@ -75,17 +90,21 @@ public final class BodyExtractor {
         if (contentType == null) {
             return false;
         }
-        String lower = contentType.toLowerCase();
+        String lower = contentType.toLowerCase(Locale.ROOT);
         return properties.getExcludedContentTypes().stream()
-                .map(String::toLowerCase)
+                .map(value -> value.toLowerCase(Locale.ROOT))
                 .anyMatch(lower::startsWith);
     }
 
     private static String omittedPlaceholder(String contentType) {
-        if (contentType != null && contentType.toLowerCase().startsWith("multipart/")) {
+        if (contentType != null && contentType.toLowerCase(Locale.ROOT).startsWith("multipart/")) {
             return "[multipart omitted]";
         }
         return "[binary omitted]";
+    }
+
+    private static String overflowPlaceholder(AccessLogProperties properties) {
+        return "[body omitted: exceeds " + properties.getMaxBodyCacheSize() + " byte cache limit]";
     }
 
     private static String truncate(String value, int maxLength) {

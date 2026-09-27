@@ -1,24 +1,22 @@
 package com.example.accesslog;
 
 import com.example.accesslog.mask.BodyMasker;
+import com.example.accesslog.support.BoundedContentCachingRequestWrapper;
+import com.example.accesslog.support.BoundedContentCachingResponseWrapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingRequestWrapper;
-import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
 
 /**
  * HTTP request/response 전체 흐름을 capture 하여 access log를 남기는 필터.
  *
- * <p>{@link ContentCachingRequestWrapper} / {@link ContentCachingResponseWrapper}로 body를 cache 하고,
+ * <p>body 기록이 활성화된 경우에만 bounded caching wrapper를 사용하고,
  * 처리 완료 후 elapsed time과 함께 {@link AccessLogEntry}를 작성한다.
- *
- * <p>예외가 발생하더라도 {@code finally}에서 access log를 남기며,
- * {@code copyBodyToResponse()}로 캐시된 응답 body를 실제 응답으로 복사한다.
+ * response는 클라이언트로 즉시 전달되며 로그용 복사본만 제한된 크기로 보관한다.
  */
 public class AccessLogFilter extends OncePerRequestFilter {
 
@@ -52,44 +50,44 @@ public class AccessLogFilter extends OncePerRequestFilter {
 
         long startedAt = System.currentTimeMillis();
 
-        ContentCachingRequestWrapper wrappedRequest =
-                wrapRequest(request);
+        HttpServletRequest wrappedRequest = properties.isIncludeRequestBody()
+                ? wrapRequest(request, properties.getMaxBodyCacheSize())
+                : request;
 
-        ContentCachingResponseWrapper wrappedResponse =
-                wrapResponse(response);
+        HttpServletResponse wrappedResponse = properties.isIncludeResponseBody()
+                ? wrapResponse(response, properties.getMaxBodyCacheSize())
+                : response;
 
         try {
             filterChain.doFilter(wrappedRequest, wrappedResponse);
         } finally {
+            if (wrappedResponse instanceof BoundedContentCachingResponseWrapper cachedResponse) {
+                cachedResponse.flushCapturedContent();
+            }
             long elapsedMs = System.currentTimeMillis() - startedAt;
 
-            try {
-                AccessLogEntry entry = AccessLogEntry.from(
-                        wrappedRequest,
-                        wrappedResponse,
-                        elapsedMs,
-                        properties,
-                        bodyMasker
-                );
-                accessLogWriter.write(entry);
-            } finally {
-                // 캐시된 응답 body를 실제 클라이언트 응답으로 복사한다. 누락 시 빈 응답이 나갈 수 있다.
-                wrappedResponse.copyBodyToResponse();
-            }
+            AccessLogEntry entry = AccessLogEntry.from(
+                    wrappedRequest,
+                    wrappedResponse,
+                    elapsedMs,
+                    properties,
+                    bodyMasker
+            );
+            accessLogWriter.write(entry);
         }
     }
 
-    private static ContentCachingRequestWrapper wrapRequest(HttpServletRequest request) {
-        if (request instanceof ContentCachingRequestWrapper cached) {
+    private static BoundedContentCachingRequestWrapper wrapRequest(HttpServletRequest request, int cacheLimit) {
+        if (request instanceof BoundedContentCachingRequestWrapper cached) {
             return cached;
         }
-        return new ContentCachingRequestWrapper(request);
+        return new BoundedContentCachingRequestWrapper(request, cacheLimit);
     }
 
-    private static ContentCachingResponseWrapper wrapResponse(HttpServletResponse response) {
-        if (response instanceof ContentCachingResponseWrapper cached) {
+    private static BoundedContentCachingResponseWrapper wrapResponse(HttpServletResponse response, int cacheLimit) {
+        if (response instanceof BoundedContentCachingResponseWrapper cached) {
             return cached;
         }
-        return new ContentCachingResponseWrapper(response);
+        return new BoundedContentCachingResponseWrapper(response, cacheLimit);
     }
 }

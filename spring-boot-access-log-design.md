@@ -1,5 +1,7 @@
 # Spring Boot REST API Access Log 공용 모듈 설계안
 
+> 이 문서는 초기 설계 기록이다. 현재 구현은 Spring Boot 4 전용이며, query masking과 bounded body caching을 사용한다. 최신 사용법과 설정은 `README.md`를 기준으로 한다.
+
 ## 1. 목적
 
 Spring Boot 기반 Java 서비스에서 REST API 호출에 대한 access log를 공통 방식으로 남기기 위한 공용 모듈을 설계한다.

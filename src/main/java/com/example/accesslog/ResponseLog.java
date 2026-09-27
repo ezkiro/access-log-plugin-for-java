@@ -3,7 +3,7 @@ package com.example.accesslog;
 import com.example.accesslog.mask.BodyMasker;
 import com.example.accesslog.support.BodyExtractor;
 import com.example.accesslog.support.HeaderExtractor;
-import org.springframework.web.util.ContentCachingResponseWrapper;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Map;
 
@@ -15,7 +15,7 @@ public record ResponseLog(
         String body
 ) {
     public static ResponseLog from(
-            ContentCachingResponseWrapper response,
+            HttpServletResponse response,
             AccessLogProperties properties,
             BodyMasker masker
     ) {

@@ -1,11 +1,11 @@
 package com.example.accesslog;
 
 import com.example.accesslog.mask.BodyMasker;
+import com.example.accesslog.support.QueryStringExtractor;
 import com.example.accesslog.trace.TraceConstants;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.MDC;
-import org.springframework.web.util.ContentCachingRequestWrapper;
-import org.springframework.web.util.ContentCachingResponseWrapper;
 
 /**
  * 하나의 HTTP transaction을 표현하는 access log entry.
@@ -29,8 +29,8 @@ public record AccessLogEntry(
         ResponseLog response
 ) {
     public static AccessLogEntry from(
-            ContentCachingRequestWrapper request,
-            ContentCachingResponseWrapper response,
+            HttpServletRequest request,
+            HttpServletResponse response,
             long elapsedMs,
             AccessLogProperties properties,
             BodyMasker masker
@@ -40,7 +40,7 @@ public record AccessLogEntry(
                 MDC.get(TraceConstants.TRACE_ID),
                 request.getMethod(),
                 request.getRequestURI(),
-                request.getQueryString(),
+                QueryStringExtractor.extract(request, properties),
                 resolveClientIp(request),
                 request.getHeader("User-Agent"),
                 response.getStatus(),

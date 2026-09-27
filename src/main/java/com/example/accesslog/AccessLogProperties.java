@@ -15,6 +15,9 @@ import java.util.List;
  *   include-response-headers: true
  *   include-response-body: true
  *   max-body-length: 5000
+ *   max-body-cache-size: 65536
+ *   include-query-string: true
+ *   masked-query-parameters: [password, token, accessToken, refreshToken, secret]
  *   exclude-patterns: [/actuator, /health]
  *   masked-headers: [authorization, cookie, set-cookie, x-api-key]
  *   masked-fields: [password, token, accessToken, refreshToken, secret]
@@ -41,6 +44,21 @@ public class AccessLogProperties {
 
     /** body 기록 최대 길이. 초과분은 truncate 된다. */
     private int maxBodyLength = 5000;
+
+    /** request/response body를 메모리에 보관할 최대 byte 수. */
+    private int maxBodyCacheSize = 64 * 1024;
+
+    /** query string 기록 여부. */
+    private boolean includeQueryString = true;
+
+    /** 값을 마스킹할 query parameter 이름 목록 (대소문자 무시). */
+    private List<String> maskedQueryParameters = List.of(
+            "password",
+            "token",
+            "accesstoken",
+            "refreshtoken",
+            "secret"
+    );
 
     /** access log 자체를 남기지 않을 URI prefix 목록. */
     private List<String> excludePatterns = List.of(
@@ -121,6 +139,33 @@ public class AccessLogProperties {
 
     public void setMaxBodyLength(int maxBodyLength) {
         this.maxBodyLength = maxBodyLength;
+    }
+
+    public int getMaxBodyCacheSize() {
+        return maxBodyCacheSize;
+    }
+
+    public void setMaxBodyCacheSize(int maxBodyCacheSize) {
+        if (maxBodyCacheSize <= 0) {
+            throw new IllegalArgumentException("access-log.max-body-cache-size must be greater than zero");
+        }
+        this.maxBodyCacheSize = maxBodyCacheSize;
+    }
+
+    public boolean isIncludeQueryString() {
+        return includeQueryString;
+    }
+
+    public void setIncludeQueryString(boolean includeQueryString) {
+        this.includeQueryString = includeQueryString;
+    }
+
+    public List<String> getMaskedQueryParameters() {
+        return maskedQueryParameters;
+    }
+
+    public void setMaskedQueryParameters(List<String> maskedQueryParameters) {
+        this.maskedQueryParameters = maskedQueryParameters;
     }
 
     public List<String> getExcludePatterns() {

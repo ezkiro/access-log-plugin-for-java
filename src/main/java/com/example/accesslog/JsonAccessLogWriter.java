@@ -1,8 +1,8 @@
 package com.example.accesslog;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Access log entry를 JSON 한 줄로 직렬화하여 {@code ACCESS_LOG} logger에 INFO로 기록한다.

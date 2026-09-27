@@ -1,6 +1,6 @@
 # common-web-logging-starter
 
-Spring Boot 3 기반 REST API access log 공용 모듈. [spring-boot-access-log-design.md](spring-boot-access-log-design.md) 설계안 구현체.
+Spring Boot 4 기반 servlet 웹 애플리케이션용 access log 공용 모듈. [spring-boot-access-log-design.md](spring-boot-access-log-design.md) 설계안 구현체.
 
 ```
 Access Log  = request + response + status + elapsedMs
@@ -13,7 +13,7 @@ Access log는 HTTP transaction(request/response pair)을 기록하고, 예외 �
 ## 요구 사항
 
 - Java 17+
-- Spring Boot 3.x (servlet 웹 애플리케이션)
+- Spring Boot 4.1+ (servlet 웹 애플리케이션)
 
 ## 빌드
 
@@ -28,7 +28,7 @@ Access log는 HTTP transaction(request/response pair)을 기록하고, 예외 �
 
 ```gradle
 dependencies {
-    implementation 'com.example:common-web-logging-starter:0.1.0'
+    implementation 'com.example:common-web-logging-starter:0.2.0'
 }
 ```
 
@@ -44,6 +44,15 @@ access-log:
   include-response-headers: true
   include-response-body: true
   max-body-length: 5000
+  # request/response별 로그용 body cache의 byte 상한
+  max-body-cache-size: 65536
+  include-query-string: true
+  masked-query-parameters:
+    - password
+    - token
+    - accessToken
+    - refreshToken
+    - secret
   exclude-patterns:
     - /actuator
     - /health
@@ -104,5 +113,8 @@ AccessLogWriter myAccessLogWriter(ObjectMapper om) {
 - `request.body` / `response.body`는 설계의 record 정의대로 **String**으로 기록된다. JSON 본문은 JSON 문자열로 직렬화된다(중첩 객체로 풀지 않음).
 - JSON 파싱 실패 body는 원문을 남기지 않고 `[unparseable body masked]` placeholder로 대체하여 민감 정보 노출을 방지한다(설계 16장 운영 권장 정책 반영).
 - binary/대용량 content-type은 `[multipart omitted]` / `[binary omitted]`로 대체한다.
+- query parameter 이름을 대소문자 구분 없이 비교하여 값을 마스킹한다. query string 전체 기록은 `include-query-string=false`로 끌 수 있다.
+- request/response body는 `max-body-cache-size`까지만 메모리에 보관한다. 한도를 넘으면 부분 원문 대신 `[body omitted: exceeds ... byte cache limit]` placeholder를 기록한다.
+- body 기록이 꺼진 방향에는 caching wrapper를 적용하지 않는다. response body는 클라이언트로 전달하면서 제한된 로그용 복사본만 만든다.
 - 기본 `GlobalExceptionHandler`는 서비스 advice와의 충돌을 피하기 위해 `access-log.exception-handler.enabled=true` opt-in이며 `@ConditionalOnMissingBean`이다.
 ```

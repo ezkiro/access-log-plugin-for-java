@@ -4,7 +4,6 @@ import com.example.accesslog.error.GlobalExceptionHandler;
 import com.example.accesslog.mask.BodyMasker;
 import com.example.accesslog.mask.JsonBodyMasker;
 import com.example.accesslog.trace.TraceIdFilter;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -15,6 +14,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Access log 모듈 auto-configuration.
